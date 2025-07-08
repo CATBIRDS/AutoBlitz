@@ -141,6 +141,7 @@ end
 mod.on_game_state_changed = function()
 	local archetype = mod.check_archetype()
 	DOG.ELIGIBLE = archetype and archetype == "adamant" or false
+	DOG.UNIT = nil
 end
 
 mod.update = function()
