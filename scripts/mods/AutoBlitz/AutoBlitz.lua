@@ -208,7 +208,7 @@ mod.check_dogsplosion = function()
 	if not DOG.UNIT then return false end
 	local player = Managers.player:local_player(1)
     local player_unit = player and player.player_unit
-    local talent_extension = ScriptUnit.extension(player_unit, "talent_system")
+    local talent_extension = player_unit and ScriptUnit.extension(player_unit, "talent_system")
 	if talent_extension and talent_extension:has_special_rule("adamant_whistle") then
 		return true
 	end
@@ -226,7 +226,7 @@ mod.fetch_dog = function()
 		-- And that unit should have a dog
 		local should_dog = profile and ProfileUtils.has_companion(profile)
 		if should_dog then
-			local dog_spawner = ScriptUnit.has_extension(player_unit, "companion_spawner_system")
+			local dog_spawner = player_unit and ScriptUnit.has_extension(player_unit, "companion_spawner_system")
 			local dog = dog_spawner and dog_spawner:companion_unit()
 			-- And there is in fact a dog
 			if dog then
@@ -319,6 +319,15 @@ mod.daemon_radar = function(dog)
 		end
 	end
 	return daemonhost_in_range
+end
+
+mod.get_dogsplosion_charges = function()
+	if not DOG.UNIT then return false end
+	local player = Managers.player:local_player(1)
+    local player_unit = player and player.player_unit
+    local ability_system = player_unit and ScriptUnit.extension(player_unit, "ability_system")
+	local charges = ability_system and ability_system:remaining_ability_charges("grenade_ability") or 0
+	return charges
 end
 
 -- ┌────────────────────────────┐ --
@@ -471,6 +480,11 @@ mod:hook(CLASS.InputService, "_get", function(func, self, action_name)
 			end
 			-- Override allowance if the player requires a pounce and the dog is not pouncing
 			if grenades.dogsplosion.pounce_only and not DOG.POUNCING then
+				allowed_to_explode = false
+			end
+			-- Override allowance if not enough charges
+			local charges = mod.get_dogsplosion_charges()
+			if charges < grenades.dogsplosion.minimum then
 				allowed_to_explode = false
 			end
 			-- Execute dogsplosion if still allowed and there is no active cooldown
